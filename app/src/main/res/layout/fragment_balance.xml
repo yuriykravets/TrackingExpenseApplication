@@ -8,28 +8,35 @@
     android:padding="16dp">
 
     <TextView
+        android:id="@+id/bitcoinExchangeRate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        tools:text="Exchange Rate: $0" />
+
+    <TextView
         android:id="@+id/bitcoinBalance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:textColor="@color/black"
+        android:layout_marginTop="@dimen/gap_medium"
         tools:text="Balance: 0 BTC" />
 
     <Button
         android:id="@+id/btnTopUp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Top Up" />
+        android:text="@string/top_up" />
 
     <Button
         android:id="@+id/btnAddTransaction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Add Transaction" />
+        android:text="@string/add_transaction" />
 
-    <TextView
-        android:id="@+id/bitcoinExchangeRate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Exchange Rate: $0" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/transactionsRecyclerView"

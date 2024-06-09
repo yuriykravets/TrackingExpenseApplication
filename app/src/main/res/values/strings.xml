@@ -5,6 +5,10 @@
     <string name="balance_text">Balance: %1$.2f BTC</string>
     <string name="exchange_rate_text">Exchange Rate: $%1$.2f</string>
 
+    <string name="top_up">Top Up</string>
+    <string name="add_transaction">Add Transaction</string>
+    <string name="btc_amount">Введіть кількість BTC для поповнення рахунку</string>
+    <string name="enter_valid_amount">Enter valid amount</string>
 
     <string-array name="transaction_categories">
         <item>Groceries</item>

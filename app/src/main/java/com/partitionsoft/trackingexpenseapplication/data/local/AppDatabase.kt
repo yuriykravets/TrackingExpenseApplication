@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 
-@Database(entities = [Transaction::class], version = 1)
+@Database(entities = [Transaction::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
 
@@ -20,7 +20,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "transaction_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

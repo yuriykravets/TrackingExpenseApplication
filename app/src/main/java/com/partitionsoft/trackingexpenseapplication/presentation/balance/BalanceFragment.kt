@@ -13,11 +13,13 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.partitionsoft.trackingexpenseapplication.R
 import com.partitionsoft.trackingexpenseapplication.common.viewBinding
+import com.partitionsoft.trackingexpenseapplication.data.local.PreferenceHelper
 import com.partitionsoft.trackingexpenseapplication.databinding.FragmentBalanceBinding
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionType
 import com.partitionsoft.trackingexpenseapplication.presentation.adapter.TransactionAdapter
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import java.util.concurrent.TimeUnit
 
 class BalanceFragment : Fragment() {
 
@@ -36,6 +38,7 @@ class BalanceFragment : Fragment() {
         observeTransactions()
         setupRecyclerView()
         setupListeners()
+        checkAndUpdateExchangeRate()
     }
 
     private fun setupRecyclerView() {
@@ -70,6 +73,17 @@ class BalanceFragment : Fragment() {
         viewModel.loadTransactions()
     }
 
+    private fun checkAndUpdateExchangeRate() {
+        val lastUpdateTime = PreferenceHelper.getLastUpdateTime(requireContext())
+        val currentTime = System.currentTimeMillis()
+        val oneHourInMillis = TimeUnit.HOURS.toMillis(1)
+
+        if (currentTime - lastUpdateTime > oneHourInMillis) {
+            viewModel.loadExchangeRate()
+            PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
+        }
+    }
+
     private fun showTopUpDialog() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.top_up_dialog, null)
         val amountEditText: EditText = dialogView.findViewById(R.id.amountEditText)
@@ -93,7 +107,8 @@ class BalanceFragment : Fragment() {
                 )
                 dialog.dismiss()
             } else {
-                Toast.makeText(requireContext(), "Enter a valid amount", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), R.string.enter_valid_amount, Toast.LENGTH_SHORT)
+                    .show()
             }
         }
 

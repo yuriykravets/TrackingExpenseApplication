@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 val networkModule = module {
     single {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl("https://api.coindesk.com/v1/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(TransactionApiService::class.java)
