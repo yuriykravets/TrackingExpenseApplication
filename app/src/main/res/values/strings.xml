@@ -2,7 +2,7 @@
     <string name="app_name">TrackingExpenseApplication</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="balance_text">Balance: %1$.2f BTC</string>
+    <string name="balance_text">Balance: %1$.8f BTC</string>
     <string name="exchange_rate_text">Exchange Rate: $%1$.2f</string>
 
     <string name="top_up">Top Up</string>
