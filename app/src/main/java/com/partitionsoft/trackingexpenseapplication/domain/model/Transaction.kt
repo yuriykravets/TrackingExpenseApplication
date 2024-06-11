@@ -12,6 +12,11 @@ data class Transaction(
     val timestamp: Long
 )
 
+data class TransactionUiModel(
+    val amount: Double,
+    val category: String
+)
+
 enum class TransactionType {
     TOP_UP,
     EXPENSE

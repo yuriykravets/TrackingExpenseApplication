@@ -4,12 +4,15 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.partitionsoft.trackingexpenseapplication.data.local.PreferenceHelper
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionType
+import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionUiModel
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.AddTransactionUseCase
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.GetBitcoinExchangeRateUseCase
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.GetTransactionsUseCase
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 class BalanceViewModel(
     private val addTransactionUseCase: AddTransactionUseCase,
@@ -60,8 +63,31 @@ class BalanceViewModel(
         }
     }
 
-    fun addTransaction(transaction: Transaction) {
+    fun addTransaction(transactionUiModel: TransactionUiModel) {
         viewModelScope.launch {
+            val transaction = Transaction(
+                id = System.currentTimeMillis(),
+                amount = transactionUiModel.amount,
+                type = TransactionType.EXPENSE,
+                category = transactionUiModel.category,
+                timestamp = System.currentTimeMillis()
+            )
+            addTransactionUseCase.execute(transaction)
+            val transactions = getTransactionsUseCase.execute()
+            _transactions.value = transactions
+            calculateBalance(transactions)
+        }
+    }
+
+    fun addTopUpTransaction(amount: Double) {
+        viewModelScope.launch {
+            val transaction = Transaction(
+                id = System.currentTimeMillis(),
+                amount = amount,
+                type = TransactionType.TOP_UP,
+                category = "Top Up",
+                timestamp = System.currentTimeMillis()
+            )
             addTransactionUseCase.execute(transaction)
             val transactions = getTransactionsUseCase.execute()
             _transactions.value = transactions

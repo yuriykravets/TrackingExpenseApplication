@@ -38,7 +38,6 @@ class BalanceFragment : Fragment() {
         observeTransactions()
         setupRecyclerView()
         setupListeners()
-        checkAndUpdateExchangeRate()
     }
 
     private fun setupRecyclerView() {
@@ -73,20 +72,6 @@ class BalanceFragment : Fragment() {
         viewModel.loadTransactions()
     }
 
-    private fun checkAndUpdateExchangeRate() {
-        val lastUpdateTime = PreferenceHelper.getLastUpdateTime(requireContext())
-        val currentTime = System.currentTimeMillis()
-        val oneHourInMillis = TimeUnit.HOURS.toMillis(1)
-
-        if (currentTime - lastUpdateTime > oneHourInMillis) {
-            viewModel.loadExchangeRate()
-            PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
-        } else if (lastUpdateTime == 0L) {
-            viewModel.loadExchangeRate()
-            PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
-        }
-    }
-
     private fun showTopUpDialog() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.top_up_dialog, null)
         val amountEditText: EditText = dialogView.findViewById(R.id.amountEditText)
@@ -99,15 +84,7 @@ class BalanceFragment : Fragment() {
         btnTopUp.setOnClickListener {
             val amount = amountEditText.text.toString().toDoubleOrNull()
             if (amount != null) {
-                viewModel.addTransaction(
-                    Transaction(
-                        id = System.currentTimeMillis(),
-                        amount = amount,
-                        type = TransactionType.TOP_UP,
-                        category = "Top Up",
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                viewModel.addTopUpTransaction(amount)
                 dialog.dismiss()
             } else {
                 Toast.makeText(requireContext(), R.string.enter_valid_amount, Toast.LENGTH_SHORT)

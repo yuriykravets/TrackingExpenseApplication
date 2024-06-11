@@ -13,6 +13,7 @@ import com.partitionsoft.trackingexpenseapplication.common.viewBinding
 import com.partitionsoft.trackingexpenseapplication.databinding.FragmentTransactionsCategoryBinding
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionType
+import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionUiModel
 import com.partitionsoft.trackingexpenseapplication.presentation.balance.BalanceViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -42,15 +43,11 @@ class TransactionsCategoryFragment : Fragment() {
             val category = binding.categorySpinner.selectedItem as String
 
             if (amount != null) {
-                viewModel.addTransaction(
-                    Transaction(
-                        id = System.currentTimeMillis(),
-                        amount = amount,
-                        type = TransactionType.EXPENSE,
-                        category = category,
-                        timestamp = System.currentTimeMillis()
-                    )
+                val transactionUI = TransactionUiModel(
+                    amount = amount,
+                    category = category
                 )
+                viewModel.addTransaction(transactionUI)
                 findNavController().popBackStack()
             } else {
                 Toast.makeText(requireContext(), "Enter a valid amount", Toast.LENGTH_SHORT).show()
