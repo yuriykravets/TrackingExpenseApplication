@@ -1,6 +1,7 @@
 package com.partitionsoft.trackingexpenseapplication.presentation.balance
 
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.partitionsoft.trackingexpenseapplication.R
 import com.partitionsoft.trackingexpenseapplication.common.viewBinding
 import com.partitionsoft.trackingexpenseapplication.data.local.PreferenceHelper
@@ -26,6 +28,9 @@ class BalanceFragment : Fragment() {
     private val binding by viewBinding(FragmentBalanceBinding::inflate)
     private val viewModel: BalanceViewModel by viewModel()
     private lateinit var transactionAdapter: TransactionAdapter
+    private var isLoading = false
+    private var recyclerViewState: Parcelable? = null
+
 
 
     override fun onCreateView(
@@ -42,9 +47,21 @@ class BalanceFragment : Fragment() {
 
     private fun setupRecyclerView() {
         transactionAdapter = TransactionAdapter()
-        binding.transactionsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.transactionsRecyclerView.adapter = transactionAdapter
+        binding.transactionsRecyclerView.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = transactionAdapter
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                    if (!isLoading && !recyclerView.canScrollVertically(1) && newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        isLoading = true
+                        viewModel.loadNextPage()
+                    }
+                }
+            })
+        }
     }
+
 
     private fun setupListeners() {
         binding.btnTopUp.setOnClickListener {
@@ -66,7 +83,10 @@ class BalanceFragment : Fragment() {
         }
 
         viewModel.transactions.observe(viewLifecycleOwner) { transactions ->
-            transactionAdapter.submitList(transactions)
+            transactionAdapter.submitList(transactions) {
+                binding.transactionsRecyclerView.scrollToPosition(0)
+            }
+            isLoading = false
         }
         viewModel.loadExchangeRate()
         viewModel.loadTransactions()

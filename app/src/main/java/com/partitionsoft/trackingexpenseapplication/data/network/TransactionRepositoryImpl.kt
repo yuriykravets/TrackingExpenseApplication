@@ -7,8 +7,9 @@ class TransactionRepositoryImpl(
     private val transactionDao: TransactionDao,
     private val apiService: TransactionApiService
 ) : TransactionRepository {
-    override suspend fun getAllTransactions(): List<Transaction> {
-        return transactionDao.getAllTransactions()
+    override suspend fun getAllTransactions(page: Int, pageSize: Int): List<Transaction> {
+        val offset = (page - 1) * pageSize
+        return transactionDao.getAllTransactionWithPagination(offset, pageSize)
     }
 
     override suspend fun addTransaction(transaction: Transaction) {

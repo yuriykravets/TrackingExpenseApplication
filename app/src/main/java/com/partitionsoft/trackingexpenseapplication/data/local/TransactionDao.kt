@@ -12,6 +12,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
     suspend fun getAllTransactions(): List<Transaction>
 
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT :pageSize OFFSET :offset")
+    suspend fun getAllTransactionWithPagination(offset: Int, pageSize: Int): List<Transaction>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction)
 }
