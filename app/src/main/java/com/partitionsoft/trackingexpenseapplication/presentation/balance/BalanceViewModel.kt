@@ -29,7 +29,11 @@ class BalanceViewModel(
     private val _transactions = MutableLiveData<List<Transaction>>()
     val transactions: LiveData<List<Transaction>> get() = _transactions
 
+    private var currentPage = 1
+    private var pageSize = 20
+
     private var currentBalance: Double = 0.0
+    private var hasMoreItems = true
 
     init {
         loadTransactions()
@@ -49,10 +53,22 @@ class BalanceViewModel(
     }
 
     fun loadTransactions() {
+        if (!hasMoreItems) return
+
         viewModelScope.launch {
-            val transactions = getTransactionsUseCase.execute()
-            _transactions.value = transactions
-            calculateBalance(transactions)
+            try {
+                val transactions = getTransactionsUseCase.execute(currentPage, pageSize)
+                if (transactions.size < pageSize) {
+                    hasMoreItems = false
+                }
+                val currentList = _transactions.value.orEmpty().toMutableList()
+                currentList.addAll(transactions)
+                _transactions.value = currentList
+                calculateBalance(currentList)
+                currentPage++
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -73,9 +89,7 @@ class BalanceViewModel(
                 timestamp = System.currentTimeMillis()
             )
             addTransactionUseCase.execute(transaction)
-            val transactions = getTransactionsUseCase.execute()
-            _transactions.value = transactions
-            calculateBalance(transactions)
+            refreshTransactions()
         }
     }
 
@@ -89,9 +103,14 @@ class BalanceViewModel(
                 timestamp = System.currentTimeMillis()
             )
             addTransactionUseCase.execute(transaction)
-            val transactions = getTransactionsUseCase.execute()
-            _transactions.value = transactions
-            calculateBalance(transactions)
+            refreshTransactions()
         }
+    }
+
+    private fun refreshTransactions() {
+        currentPage = 1
+        hasMoreItems = true
+        _transactions.value = emptyList()
+        loadTransactions()
     }
 }
