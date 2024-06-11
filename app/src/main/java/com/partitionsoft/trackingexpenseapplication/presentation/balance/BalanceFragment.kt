@@ -81,6 +81,9 @@ class BalanceFragment : Fragment() {
         if (currentTime - lastUpdateTime > oneHourInMillis) {
             viewModel.loadExchangeRate()
             PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
+        } else if (lastUpdateTime == 0L) {
+            viewModel.loadExchangeRate()
+            PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
         }
     }
 
