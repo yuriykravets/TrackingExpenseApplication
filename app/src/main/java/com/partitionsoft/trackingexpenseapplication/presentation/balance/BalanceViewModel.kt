@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionType
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.AddTransactionUseCase
@@ -30,13 +29,27 @@ class BalanceViewModel(
     private var currentBalance: Double = 0.0
 
     init {
-        loadBalance()
+        loadTransactions()
+        loadExchangeRate()
+    }
+
+    private fun calculateBalance(transactions: List<Transaction>) {
+        currentBalance = 0.0
+        for (transaction in transactions) {
+            currentBalance += if (transaction.type == TransactionType.TOP_UP) {
+                transaction.amount
+            } else {
+                -transaction.amount
+            }
+        }
+        _balance.value = currentBalance
     }
 
     fun loadTransactions() {
         viewModelScope.launch {
             val transactions = getTransactionsUseCase.execute()
             _transactions.value = transactions
+            calculateBalance(transactions)
         }
     }
 
@@ -50,22 +63,9 @@ class BalanceViewModel(
     fun addTransaction(transaction: Transaction) {
         viewModelScope.launch {
             addTransactionUseCase.execute(transaction)
-            if (transaction.type == TransactionType.TOP_UP) {
-                currentBalance += transaction.amount
-            } else {
-                currentBalance -= transaction.amount
-            }
-            _balance.value = currentBalance
-        }
-    }
-
-    private fun loadBalance() {
-        viewModelScope.launch {
             val transactions = getTransactionsUseCase.execute()
-            currentBalance = transactions.sumOf {
-                if (it.type == TransactionType.TOP_UP) it.amount else -it.amount
-            }
-            _balance.value = currentBalance
+            _transactions.value = transactions
+            calculateBalance(transactions)
         }
     }
 }
