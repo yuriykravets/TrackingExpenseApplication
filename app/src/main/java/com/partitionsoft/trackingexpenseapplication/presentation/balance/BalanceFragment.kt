@@ -29,6 +29,9 @@ class BalanceFragment : Fragment() {
     private val viewModel: BalanceViewModel by viewModel()
     private lateinit var transactionAdapter: TransactionAdapter
     private var isLoading = false
+    private var recyclerViewState: Parcelable? = null
+
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -52,7 +55,7 @@ class BalanceFragment : Fragment() {
                     super.onScrollStateChanged(recyclerView, newState)
                     if (!isLoading && !recyclerView.canScrollVertically(1) && newState == RecyclerView.SCROLL_STATE_IDLE) {
                         isLoading = true
-                        viewModel.loadTransactions()
+                        viewModel.loadNextPage()
                     }
                 }
             })
@@ -80,7 +83,9 @@ class BalanceFragment : Fragment() {
         }
 
         viewModel.transactions.observe(viewLifecycleOwner) { transactions ->
-            transactionAdapter.submitList(transactions)
+            transactionAdapter.submitList(transactions) {
+                binding.transactionsRecyclerView.scrollToPosition(0)
+            }
             isLoading = false
         }
         viewModel.loadExchangeRate()
