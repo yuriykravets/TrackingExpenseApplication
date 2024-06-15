@@ -1,11 +1,12 @@
 package com.partitionsoft.trackingexpenseapplication.domain.usecase
 
+import androidx.paging.PagingData
 import com.partitionsoft.trackingexpenseapplication.data.network.TransactionRepository
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
+import kotlinx.coroutines.flow.Flow
 
 class GetTransactionsUseCase(private val repository: TransactionRepository) {
-    suspend fun execute(page: Int, pageSize: Int): List<Transaction> {
-        return repository.getAllTransactions(page, pageSize)
+    fun execute(): Flow<PagingData<Transaction>> {
+        return repository.getAllTransactions()
     }
-
 }

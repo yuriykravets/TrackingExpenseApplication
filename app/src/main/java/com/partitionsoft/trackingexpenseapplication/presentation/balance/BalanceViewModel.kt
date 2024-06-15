@@ -1,9 +1,13 @@
 package com.partitionsoft.trackingexpenseapplication.presentation.balance
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
 import com.partitionsoft.trackingexpenseapplication.data.local.PreferenceHelper
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionType
@@ -11,6 +15,9 @@ import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionUiMo
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.AddTransactionUseCase
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.GetBitcoinExchangeRateUseCase
 import com.partitionsoft.trackingexpenseapplication.domain.usecase.GetTransactionsUseCase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -20,59 +27,36 @@ class BalanceViewModel(
     private val getBitcoinExchangeRateUseCase: GetBitcoinExchangeRateUseCase
 ) : ViewModel() {
 
+    val transactions: Flow<PagingData<Transaction>> = getTransactionsUseCase.execute()
+        .cachedIn(viewModelScope)
+
     private val _balance = MutableLiveData<Double>()
     val balance: LiveData<Double> get() = _balance
 
     private val _exchangeRate = MutableLiveData<Double>()
     val exchangeRate: LiveData<Double> get() = _exchangeRate
 
-    private val _transactions = MutableLiveData<List<Transaction>>()
-    val transactions: LiveData<List<Transaction>> get() = _transactions
-
-    private var currentPage = 1
-    private var pageSize = 20
-
     private var currentBalance: Double = 0.0
 
     init {
-        loadTransactions()
         loadExchangeRate()
+        observeTransactions()
     }
 
-    private fun calculateBalance(transactions: List<Transaction>) {
-        currentBalance = 0.0
-        for (transaction in transactions) {
-            currentBalance += if (transaction.type == TransactionType.TOP_UP) {
-                transaction.amount
-            } else {
-                -transaction.amount
-            }
-        }
-        _balance.value = currentBalance
-    }
-
-    fun loadTransactions() {
+    fun observeTransactions() {
         viewModelScope.launch {
-            try {
-                val transactions = getTransactionsUseCase.execute(currentPage, pageSize)
-                _transactions.value = transactions
-                calculateBalance(transactions)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun loadNextPage() {
-        viewModelScope.launch {
-            try {
-                val newTransactions = getTransactionsUseCase.execute(currentPage + 1, pageSize)
-                val currentList = _transactions.value ?: emptyList()
-                val updatedList = currentList.toMutableList()
-                updatedList.addAll(newTransactions)
-                _transactions.value = updatedList
-            } catch (e: Exception) {
-                e.printStackTrace()
+            transactions.collectLatest { pagingData ->
+                var totalBalance = 0.0
+                pagingData.map { transaction ->
+                    if (transaction.type == TransactionType.TOP_UP) {
+                        transaction.amount
+                    } else {
+                        -transaction.amount
+                    }
+                }.map { amountToAdd ->
+                    totalBalance += amountToAdd
+                    _balance.postValue(totalBalance)
+                }
             }
         }
     }
@@ -88,34 +72,16 @@ class BalanceViewModel(
 
     fun addTransaction(transactionUiModel: TransactionUiModel) {
         viewModelScope.launch {
-            try {
-                val transaction = Transaction(
-                    id = System.currentTimeMillis(),
-                    amount = transactionUiModel.amount,
-                    type = TransactionType.EXPENSE,
-                    category = transactionUiModel.category,
-                    timestamp = System.currentTimeMillis() // Ensure the timestamp is set correctly
-                )
-                addTransactionUseCase.execute(transaction)
-
-                // Get the current list of transactions
-                val currentTransactions = _transactions.value?.toMutableList() ?: mutableListOf()
-
-                // Add the new transaction to the list
-                currentTransactions.add(transaction)
-
-                // Update the LiveData with the new list
-                _transactions.value = currentTransactions
-
-                // Recalculate balance with the updated list
-                calculateBalance(currentTransactions)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            val transaction = Transaction(
+                id = System.currentTimeMillis(),
+                amount = transactionUiModel.amount,
+                type = TransactionType.EXPENSE,
+                category = transactionUiModel.category,
+                timestamp = System.currentTimeMillis()
+            )
+            addTransactionUseCase.execute(transaction)
         }
     }
-
-
 
 
     fun addTopUpTransaction(amount: Double) {
@@ -128,9 +94,7 @@ class BalanceViewModel(
                 timestamp = System.currentTimeMillis()
             )
             addTransactionUseCase.execute(transaction)
-            val transactions = getTransactionsUseCase.execute(currentPage, pageSize)
-            _transactions.value = transactions
-            calculateBalance(transactions)
         }
     }
 }
+

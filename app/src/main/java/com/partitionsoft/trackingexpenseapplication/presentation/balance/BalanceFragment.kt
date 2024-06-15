@@ -2,6 +2,7 @@ package com.partitionsoft.trackingexpenseapplication.presentation.balance
 
 import android.os.Bundle
 import android.os.Parcelable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,7 +11,9 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.partitionsoft.trackingexpenseapplication.R
@@ -20,6 +23,8 @@ import com.partitionsoft.trackingexpenseapplication.databinding.FragmentBalanceB
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
 import com.partitionsoft.trackingexpenseapplication.domain.model.TransactionType
 import com.partitionsoft.trackingexpenseapplication.presentation.adapter.TransactionAdapter
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.concurrent.TimeUnit
 
@@ -28,9 +33,6 @@ class BalanceFragment : Fragment() {
     private val binding by viewBinding(FragmentBalanceBinding::inflate)
     private val viewModel: BalanceViewModel by viewModel()
     private lateinit var transactionAdapter: TransactionAdapter
-    private var isLoading = false
-    private var recyclerViewState: Parcelable? = null
-
 
 
     override fun onCreateView(
@@ -40,8 +42,8 @@ class BalanceFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        observeTransactions()
         setupRecyclerView()
+        observeTransactions()
         setupListeners()
     }
 
@@ -50,15 +52,6 @@ class BalanceFragment : Fragment() {
         binding.transactionsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = transactionAdapter
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    if (!isLoading && !recyclerView.canScrollVertically(1) && newState == RecyclerView.SCROLL_STATE_IDLE) {
-                        isLoading = true
-                        viewModel.loadNextPage()
-                    }
-                }
-            })
         }
     }
 
@@ -75,21 +68,22 @@ class BalanceFragment : Fragment() {
 
     private fun observeTransactions() {
         viewModel.balance.observe(viewLifecycleOwner) { balance ->
+            Log.d("BalanceFragment", "Balance: $balance")
             binding.bitcoinBalance.text = getString(R.string.balance_text, balance)
         }
 
         viewModel.exchangeRate.observe(viewLifecycleOwner) { rate ->
+            Log.d("BalanceFragment", "Rate: $rate")
             binding.bitcoinExchangeRate.text = getString(R.string.exchange_rate_text, rate)
         }
 
-        viewModel.transactions.observe(viewLifecycleOwner) { transactions ->
-            transactionAdapter.submitList(transactions) {
-                binding.transactionsRecyclerView.scrollToPosition(0)
+        lifecycleScope.launchWhenStarted {
+            viewModel.transactions.collectLatest { pagingData ->
+                transactionAdapter.submitData(pagingData)
             }
-            isLoading = false
         }
+        viewModel.observeTransactions()
         viewModel.loadExchangeRate()
-        viewModel.loadTransactions()
     }
 
     private fun showTopUpDialog() {

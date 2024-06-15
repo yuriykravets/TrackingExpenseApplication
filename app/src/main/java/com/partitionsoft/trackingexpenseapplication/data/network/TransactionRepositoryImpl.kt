@@ -1,15 +1,28 @@
 package com.partitionsoft.trackingexpenseapplication.data.network
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.partitionsoft.trackingexpenseapplication.data.local.TransactionDao
 import com.partitionsoft.trackingexpenseapplication.domain.model.Transaction
+import kotlinx.coroutines.flow.Flow
 
 class TransactionRepositoryImpl(
     private val transactionDao: TransactionDao,
     private val apiService: TransactionApiService
 ) : TransactionRepository {
-    override suspend fun getAllTransactions(page: Int, pageSize: Int): List<Transaction> {
-        val offset = (page - 1) * pageSize
-        return transactionDao.getAllTransactionWithPagination(offset, pageSize)
+
+    override fun getTransactions(): List<Transaction> {
+        return transactionDao.getTransactions()
+    }
+    override fun getAllTransactions(): Flow<PagingData<Transaction>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { transactionDao.getAllTransactions() }
+        ).flow
     }
 
     override suspend fun addTransaction(transaction: Transaction) {
