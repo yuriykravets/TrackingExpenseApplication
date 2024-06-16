@@ -43,11 +43,14 @@ class TransactionsCategoryFragment : Fragment() {
             val category = binding.categorySpinner.selectedItem as String
 
             if (amount != null) {
-                val transactionUI = TransactionUiModel(
+                val transaction = Transaction(
+                    id = System.currentTimeMillis(),
                     amount = amount,
-                    category = category
+                    category = category,
+                    type = TransactionType.EXPENSE,
+                    timestamp = System.currentTimeMillis()
                 )
-                viewModel.addTransaction(transactionUI)
+                viewModel.addTransaction(transaction)
                 findNavController().popBackStack()
             } else {
                 Toast.makeText(requireContext(), "Enter a valid amount", Toast.LENGTH_SHORT).show()

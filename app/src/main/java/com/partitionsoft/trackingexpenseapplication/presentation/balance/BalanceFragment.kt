@@ -29,8 +29,6 @@ class BalanceFragment : Fragment() {
     private val viewModel: BalanceViewModel by viewModel()
     private lateinit var transactionAdapter: TransactionAdapter
     private var isLoading = false
-    private var recyclerViewState: Parcelable? = null
-
 
 
     override fun onCreateView(
@@ -43,6 +41,7 @@ class BalanceFragment : Fragment() {
         observeTransactions()
         setupRecyclerView()
         setupListeners()
+        checkAndUpdateExchangeRate()
     }
 
     private fun setupRecyclerView() {
@@ -89,7 +88,21 @@ class BalanceFragment : Fragment() {
             isLoading = false
         }
         viewModel.loadExchangeRate()
-        viewModel.loadTransactions()
+        viewModel.loadInitialTransactions()
+    }
+
+    private fun checkAndUpdateExchangeRate() {
+        val lastUpdateTime = PreferenceHelper.getLastUpdateTime(requireContext())
+        val currentTime = System.currentTimeMillis()
+        val oneHourInMillis = TimeUnit.HOURS.toMillis(1)
+
+        if (currentTime - lastUpdateTime > oneHourInMillis) {
+            viewModel.loadExchangeRate()
+            PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
+        } else if (lastUpdateTime == 0L) {
+            viewModel.loadExchangeRate()
+            PreferenceHelper.setLastUpdateTime(requireContext(), currentTime)
+        }
     }
 
     private fun showTopUpDialog() {
